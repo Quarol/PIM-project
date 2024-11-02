@@ -1,3 +1,27 @@
+# Użycie eslinta (utrzymanie spojności formotowania kodu) 👋
+```bash
+npx eslint "./**/*.{js,ts,tsx}" --fix
+
+```
+
+Projekt oparty na Expo zawiera sekcje:
+
+- **Tabs**: Główna nawigacja z zakładkami ( na dole).
+- **Nottabs**: Inne ekrany, które nie będa w zakładach.
+- **Auth**: Sekcja odpowiedzialna za logowanie i rejestrację użytkowników. Użytkownicy muszą się zalogować, zanim uzyskają dostęp do aplikacji.
+
+
+# Projekt Expo - Kolory i Czcionki
+
+## Kolory
+- Zdefiniowane w pliku `Colors.ts`.
+- Obiekt `COLORS` zawiera wszystkie kolory używane w aplikacji.
+
+## Czcionki
+- Zdefiniowane w pliku `Fonts.ts`.
+- Obiekt `FONTS` zawiera style tekstu
+
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
