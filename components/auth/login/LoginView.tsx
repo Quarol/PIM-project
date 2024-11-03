@@ -5,24 +5,29 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
+    Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import COLORS from '@/constants/Colors';
 import FONTS from '@/constants/Fonts';
+import { FIREBASE_AUTH } from '@/FirebaseConfig';
 
 export default function LoginView() {
-    const { login } = useAuth();
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = () => {
-        if (email === '111' && password === '111') {
-            login();
+    const handleLogin = async () => {
+        setLoading(true);
+        try {
+            await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
             router.replace('/(tabs)/chats');
-        } else {
-            alert('Niepoprawne dane logowania');
+        } catch (error: any) {
+            Alert.alert('Błąd logowania', error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -46,8 +51,14 @@ export default function LoginView() {
                 onChangeText={setPassword}
                 value={password}
             />
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                <Text style={styles.loginButtonText}>Zaloguj się</Text>
+            <TouchableOpacity
+                style={styles.loginButton}
+                onPress={handleLogin}
+                disabled={loading}
+            >
+                <Text style={styles.loginButtonText}>
+                    {loading ? 'Logowanie...' : 'Zaloguj się'}
+                </Text>
             </TouchableOpacity>
             <TouchableOpacity
                 style={styles.registerLink}
@@ -84,21 +95,16 @@ const styles = StyleSheet.create({
         marginBottom: 40,
     },
     input: {
-        width: '100%',
+        width: '90%',
         height: 50,
         backgroundColor: COLORS.white,
         borderRadius: 10,
         paddingHorizontal: 15,
         marginVertical: 10,
         fontSize: 16,
-        shadowColor: COLORS.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 2,
     },
     loginButton: {
-        width: '100%',
+        width: '90%',
         height: 50,
         backgroundColor: COLORS.primary,
         borderRadius: 10,

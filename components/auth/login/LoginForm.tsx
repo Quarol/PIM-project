@@ -10,19 +10,22 @@ import COLORS from '@/constants/Colors';
 import FONTS from '@/constants/Fonts';
 
 type LoginFormProps = {
-    onSubmit: (email: string, password: string) => void;
+    onSubmit: (email: string, password: string) => Promise<void>;
 };
 
 export default function LoginForm({ onSubmit }: LoginFormProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLoginPress = () => {
-        onSubmit(email, password);
+    const handleLoginPress = async () => {
+        setLoading(true);
+        await onSubmit(email, password);
+        setLoading(false);
     };
 
     return (
-        <View>
+        <View style={styles.container}>
             <TextInput
                 style={styles.input}
                 placeholder="Email"
@@ -43,16 +46,24 @@ export default function LoginForm({ onSubmit }: LoginFormProps) {
             <TouchableOpacity
                 style={styles.loginButton}
                 onPress={handleLoginPress}
+                disabled={loading}
             >
-                <Text style={styles.loginButtonText}>Zaloguj się</Text>
+                <Text style={styles.loginButtonText}>
+                    {loading ? 'Logowanie...' : 'Zaloguj się'}
+                </Text>
             </TouchableOpacity>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    input: {
+    container: {
+        alignItems: 'center',
+        justifyContent: 'center',
         width: '100%',
+    },
+    input: {
+        width: '90%',
         height: 50,
         backgroundColor: COLORS.white,
         borderRadius: 10,
@@ -66,7 +77,7 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     loginButton: {
-        width: '100%',
+        width: '90%',
         height: 50,
         backgroundColor: COLORS.primary,
         borderRadius: 10,

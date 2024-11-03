@@ -5,25 +5,49 @@ import {
     TouchableOpacity,
     Text,
     StyleSheet,
+    Alert,
 } from 'react-native';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import COLORS from '@/constants/Colors';
 import FONTS from '@/constants/Fonts';
+import { useRouter } from 'expo-router';
+import { FIREBASE_AUTH } from '@/FirebaseConfig';
 
 type RegisterFormProps = {
-    onSubmit: (email: string, username: string, password: string) => void;
+    onRegisterSuccess: () => void;
 };
 
-export default function RegisterForm({ onSubmit }: RegisterFormProps) {
+export default function RegisterForm({ onRegisterSuccess }: RegisterFormProps) {
+    const router = useRouter();
     const [email, setEmail] = useState('');
-    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleRegisterPress = () => {
-        onSubmit(email, username, password);
+    const handleRegisterPress = async () => {
+        if (!email || !password) {
+            Alert.alert('Błąd', 'Email i hasło są wymagane.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await createUserWithEmailAndPassword(
+                FIREBASE_AUTH,
+                email,
+                password,
+            );
+            Alert.alert('Sukces', 'Konto zostało utworzone.');
+            onRegisterSuccess();
+            router.replace('/auth/login');
+        } catch (error: any) {
+            Alert.alert('Błąd rejestracji', error.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <View>
+        <View style={styles.container}>
             <TextInput
                 style={styles.input}
                 placeholder="Adres e-mail"
@@ -32,14 +56,6 @@ export default function RegisterForm({ onSubmit }: RegisterFormProps) {
                 autoCapitalize="none"
                 onChangeText={setEmail}
                 value={email}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Nazwa użytkownika"
-                placeholderTextColor={COLORS.textSecondary}
-                autoCapitalize="none"
-                onChangeText={setUsername}
-                value={username}
             />
             <TextInput
                 style={styles.input}
@@ -52,16 +68,31 @@ export default function RegisterForm({ onSubmit }: RegisterFormProps) {
             <TouchableOpacity
                 style={styles.registerButton}
                 onPress={handleRegisterPress}
+                disabled={loading}
             >
-                <Text style={styles.registerButtonText}>Zarejestruj się</Text>
+                <Text style={styles.registerButtonText}>
+                    {loading ? 'Rejestracja...' : 'Zarejestruj się'}
+                </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={styles.homeLink}
+                onPress={() => router.push('/')}
+            >
+                <Text style={styles.homeLinkText}>
+                    Przejdź do strony głównej
+                </Text>
             </TouchableOpacity>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    input: {
+    container: {
+        alignItems: 'center',
         width: '100%',
+    },
+    input: {
+        width: '90%',
         height: 50,
         backgroundColor: COLORS.white,
         borderRadius: 10,
@@ -75,7 +106,7 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     registerButton: {
-        width: '100%',
+        width: '90%',
         height: 50,
         backgroundColor: COLORS.primary,
         borderRadius: 10,
@@ -87,5 +118,13 @@ const styles = StyleSheet.create({
         color: COLORS.white,
         fontSize: FONTS.button.fontSize,
         fontWeight: FONTS.button.fontWeight,
+    },
+    homeLink: {
+        marginTop: 20,
+    },
+    homeLinkText: {
+        color: COLORS.textSecondary,
+        fontSize: FONTS.body.fontSize,
+        textDecorationLine: 'underline',
     },
 });
