@@ -1,13 +1,10 @@
-// ChatsScreen.tsx
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import LogoutButton from '@/components/navigation/LogutButton';
 import ChatList from '@/components/chats/ChatList';
 
 export default function ChatsScreen() {
     return (
         <View style={styles.container}>
-            <LogoutButton />
             <ChatList />
         </View>
     );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -22,15 +22,29 @@ export default function ChatView({ id }: ChatViewProps) {
     const [messages, setMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState('');
 
+    const flatListRef = useRef<FlatList<any>>(null);
+
     useEffect(() => {
         if (!id) return;
 
         const unsubscribe = subscribeToMessages(id, (loadedMessages) => {
-            setMessages(loadedMessages);
+            const sortedMessages = loadedMessages.sort((a, b) => {
+                if (a.timestamp && b.timestamp) {
+                    return a.timestamp.toDate() - b.timestamp.toDate();
+                }
+                return 0;
+            });
+            setMessages(sortedMessages);
         });
 
         return unsubscribe;
     }, [id]);
+
+    useEffect(() => {
+        if (messages.length > 0) {
+            flatListRef.current?.scrollToEnd({ animated: true });
+        }
+    }, [messages]);
 
     const handleSendMessage = async () => {
         if (newMessage.trim() === '' || !user || !user.email) return;
@@ -64,7 +78,8 @@ export default function ChatView({ id }: ChatViewProps) {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <FlatList
-                data={messages.slice().reverse()}
+                ref={flatListRef}
+                data={messages}
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
                 contentContainerStyle={styles.messagesList}
@@ -96,7 +111,7 @@ const styles = StyleSheet.create({
     messagesList: {
         padding: 10,
         flexGrow: 1,
-        justifyContent: 'flex-end',
+        justifyContent: 'flex-end', // Dodano tę linię
     },
     messageItem: {
         maxWidth: '75%',

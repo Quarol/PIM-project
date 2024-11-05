@@ -15,10 +15,18 @@ import { FIREBASE_DB } from '@/FirebaseConfig';
 export async function getOrCreateChat(
     userEmail: string,
     otherUserEmail: string,
-) {
+): Promise<string | null> {
+    const usersRef = collection(FIREBASE_DB, 'users');
+    const userQuery = query(usersRef, where('email', '==', otherUserEmail));
+    const userSnapshot = await getDocs(userQuery);
+
+    if (userSnapshot.empty) {
+        return null;
+    }
+
     const chatsRef = collection(FIREBASE_DB, 'chats');
     const q = query(chatsRef, where('users', 'array-contains', userEmail));
-    let chatId = null;
+    let chatId: string | null = null;
 
     const querySnapshot = await getDocs(q);
     querySnapshot.forEach((doc) => {
@@ -37,6 +45,11 @@ export async function getOrCreateChat(
     });
 
     return newChat.id;
+}
+
+export async function deleteChat(chatId: string): Promise<void> {
+    const chatRef = doc(FIREBASE_DB, 'chats', chatId);
+    await setDoc(chatRef, { deleted: true }, { merge: true });
 }
 
 export function subscribeToChats(

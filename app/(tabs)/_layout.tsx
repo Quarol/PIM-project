@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import LogoutButton from '@/components/navigation/LogutButton';
 
 export default function TabLayout() {
     return (
@@ -15,6 +16,7 @@ export default function TabLayout() {
                             size={size}
                         />
                     ),
+                    headerRight: () => <LogoutButton />,
                 }}
             />
             <Tabs.Screen

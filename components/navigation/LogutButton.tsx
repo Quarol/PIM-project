@@ -22,7 +22,6 @@ export default function LogoutButton() {
 const styles = StyleSheet.create({
     logoutButton: {
         alignSelf: 'flex-end',
-        marginBottom: 10,
         padding: 10,
         backgroundColor: '#ff4444',
         borderRadius: 5,

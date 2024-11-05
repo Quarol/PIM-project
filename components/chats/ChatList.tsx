@@ -5,13 +5,19 @@ import {
     FlatList,
     TouchableOpacity,
     StyleSheet,
+    Alert,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { getOrCreateChat, subscribeToChats } from '../../backend/ChatService';
+import {
+    getOrCreateChat,
+    subscribeToChats,
+    deleteChat,
+} from '../../backend/ChatService';
 import { useAuth } from '@/components/auth/AuthProvider';
 import COLORS from '@/constants/Colors';
 import NewChatModal from './NewChatModal';
+import SearchBar from '@/components/chat/SearchBar';
 
 type Chat = {
     id: string;
@@ -24,81 +30,94 @@ export default function ChatList() {
     const router = useRouter();
     const { user } = useAuth();
     const [chats, setChats] = useState<Chat[]>([]);
+    const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
+    const [searchText, setSearchText] = useState<string>('');
     const [isModalVisible, setIsModalVisible] = useState(false);
 
     useEffect(() => {
         if (user && user.email) {
             const unsubscribe = subscribeToChats(user.email, (loadedChats) => {
                 setChats(loadedChats);
+                setFilteredChats(loadedChats);
             });
             return unsubscribe;
         }
     }, [user]);
 
-    const handleChatPress = (chatId: string) => {
-        router.push(`/(nottabs)/chat?id=${chatId}&backLink=/tabs/chats`);
-    };
-
-    const handleCreateChat = async (email: string) => {
-        if (!email || !user || !user.email) return;
-
-        const chatId = await getOrCreateChat(user.email, email);
-        setIsModalVisible(false);
-        router.push(`/(nottabs)/chat?id=${chatId}&backLink=/tabs/chats`);
+    const handleDeleteChat = async (chatId: string) => {
+        Alert.alert(
+            'Potwierdzenie usunięcia',
+            'Czy na pewno chcesz usunąć ten czat?',
+            [
+                { text: 'Anuluj', style: 'cancel' },
+                {
+                    text: 'Usuń',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await deleteChat(chatId);
+                    },
+                },
+            ],
+        );
     };
 
     const renderItem = ({ item }: { item: Chat }) => {
         const otherUserEmail =
             item.users.find((email) => email !== user?.email) || 'Użytkownik';
         return (
-            <TouchableOpacity
-                style={styles.chatItem}
-                onPress={() => handleChatPress(item.id)}
-            >
-                <Ionicons
-                    name="person-circle"
-                    size={40}
-                    color="#6C63FF"
-                    style={styles.icon}
-                />
-                <View style={styles.chatInfo}>
-                    <Text style={styles.chatTitle}>{otherUserEmail}</Text>
-                    <Text style={styles.chatMessage}>
-                        {item.lastMessage || 'Brak wiadomości'}
-                    </Text>
-                </View>
-                <View style={styles.timestampContainer}>
-                    {item.lastMessageTimestamp && (
-                        <Text style={styles.timestamp}>
-                            {new Date(
-                                item.lastMessageTimestamp.toDate(),
-                            ).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                            })}
+            <View style={styles.chatItem}>
+                <TouchableOpacity
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        flex: 1,
+                    }}
+                    onPress={() =>
+                        router.push(
+                            `/(nottabs)/chat?id=${item.id}&backLink=/tabs/chats`,
+                        )
+                    }
+                >
+                    <Ionicons
+                        name="person-circle"
+                        size={40}
+                        color="#6C63FF"
+                        style={styles.icon}
+                    />
+                    <View style={styles.chatInfo}>
+                        <Text style={styles.chatTitle}>{otherUserEmail}</Text>
+                        <Text style={styles.chatMessage}>
+                            {item.lastMessage || 'Brak wiadomości'}
                         </Text>
-                    )}
-                </View>
-            </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteChat(item.id)}
+                >
+                    <Ionicons
+                        name="remove-circle-outline"
+                        size={24}
+                        color="red"
+                    />
+                </TouchableOpacity>
+            </View>
         );
     };
 
     return (
         <View style={styles.container}>
-            {chats.length === 0 ? (
-                <Text style={styles.noChatsText}>Brak czatów</Text>
-            ) : (
-                <FlatList
-                    data={chats.sort(
-                        (a, b) =>
-                            b.lastMessageTimestamp?.seconds -
-                            a.lastMessageTimestamp?.seconds,
-                    )}
-                    keyExtractor={(item) => item.id}
-                    renderItem={renderItem}
-                    contentContainerStyle={styles.list}
-                />
-            )}
+            <SearchBar searchText={searchText} onSearch={setSearchText} />
+            <FlatList
+                data={filteredChats.sort(
+                    (a, b) =>
+                        b.lastMessageTimestamp?.seconds -
+                        a.lastMessageTimestamp?.seconds,
+                )}
+                keyExtractor={(item) => item.id}
+                renderItem={renderItem}
+                contentContainerStyle={styles.list}
+            />
             <TouchableOpacity
                 style={styles.fab}
                 onPress={() => setIsModalVisible(true)}
@@ -109,7 +128,10 @@ export default function ChatList() {
             <NewChatModal
                 visible={isModalVisible}
                 onClose={() => setIsModalVisible(false)}
-                onCreateChat={handleCreateChat}
+                onCreateChat={async (email) => {
+                    const chatId = await getOrCreateChat(user?.email, email);
+                    if (chatId) router.push(`/(nottabs)/chat?id=${chatId}`);
+                }}
             />
         </View>
     );
@@ -121,9 +143,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.background,
     },
     list: {
-        gap: 15,
-        paddingVertical: 20,
-        paddingHorizontal: 15,
+        paddingBottom: 20,
     },
     chatItem: {
         flexDirection: 'row',
@@ -156,19 +176,8 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: COLORS.textSecondary,
     },
-    timestampContainer: {
-        alignItems: 'flex-end',
-    },
-    timestamp: {
-        fontSize: 12,
-        color: COLORS.textSecondary,
-        marginBottom: 5,
-    },
-    noChatsText: {
-        textAlign: 'center',
-        marginTop: 20,
-        fontSize: 18,
-        color: COLORS.textSecondary,
+    deleteButton: {
+        padding: 5,
     },
     fab: {
         position: 'absolute',
